@@ -1,7 +1,7 @@
-import "dotenv/config"; // ✅ โหลด dotenv โดยใช้ ES Module
-import express from "express";
-import mongoose from "mongoose";
-import bodyParser from "body-parser";
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
 
 const app = express();
 const port = 8000;
@@ -11,14 +11,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // ✅ เชื่อมต่อ MongoDB Atlas
-const MONGO_URI = "mongodb+srv://fa_hyn8:e50xQ2lNIHw1MGXf@cluster0.wowzr.mongodb.net/myDatabase?retryWrites=true&w=majority&appName=Cluster0";
-
-mongoose.connect(MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch(err => console.error("❌ MongoDB Connection Error:", err));
+}).then(() => console.log("✅ Connected to MongoDB"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
 // ✅ สร้าง Schema สำหรับสินค้า
 const productSchema = new mongoose.Schema({
