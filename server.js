@@ -1,12 +1,14 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
 import dotenv from 'dotenv';
 import express from 'express';
+import mongoose from 'mongoose';
+import bodyParser from 'body-parser';
+
+dotenv.config(); // โหลดตัวแปรแวดล้อม
+
 const app = express();
 const port = 8000;
 
-// Middleware
+// ✅ Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
