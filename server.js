@@ -134,12 +134,13 @@ app.get("/stock-history", async (req, res) => {
   }
 });
 
+// API สำหรับเพิ่มจำนวนสินค้าในสต็อก
 app.put("/products/:id/stock/add", async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity, description } = req.body;
 
-    if (!quantity  quantity <= 0) {
+    if (!quantity || quantity <= 0) { // แก้ไขเงื่อนไขให้ถูกต้อง
       return res.status(400).json({ message: "Invalid request body" });
     }
 
@@ -155,7 +156,7 @@ app.put("/products/:id/stock/add", async (req, res) => {
       productId: product._id,
       type: "add",
       quantity,
-      description: description  ""
+      description: description || "" // แก้ไขให้ใช้ `||` แทน `""`
     });
     await history.save();
 
