@@ -134,6 +134,37 @@ app.get("/stock-history", async (req, res) => {
   }
 });
 
+app.put("/products/:id/stock/add", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity, description } = req.body;
+
+    if (!quantity  quantity <= 0) {
+      return res.status(400).json({ message: "Invalid request body" });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.stock += quantity;
+    await product.save();
+
+    const history = new StockHistory({
+      productId: product._id,
+      type: "add",
+      quantity,
+      description: description  ""
+    });
+    await history.save();
+
+    res.json({ message: "Stock added successfully", product });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // เริ่มต้นเซิร์ฟเวอร์ Express และรอรับคำขอบนพอร์ตที่กำหนด
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
