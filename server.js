@@ -2,26 +2,23 @@ import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
-import cors from 'cors'; // ✅ นำเข้า CORS
+import cors from 'cors';
 
-dotenv.config(); // โหลดตัวแปรแวดล้อม
+dotenv.config();
 
 const app = express();
 const port = 8000;
 
-// ✅ Middleware
-app.use(cors()); // ✅ เปิดใช้งาน CORS
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ✅ เชื่อมต่อ MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ สร้าง Schema สำหรับสินค้า
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: String,
@@ -29,20 +26,25 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, required: true }
 });
 
-// ✅ สร้าง Schema สำหรับ Stock History
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true }
+});
+
 const stockHistorySchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   type: { type: String, enum: ["add", "withdraw"], required: true },
   quantity: { type: Number, required: true },
   description: String,
   date: { type: Date, default: Date.now }
 });
 
-// ✅ สร้าง Models
 const Product = mongoose.model("Product", productSchema);
+const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
-// ✅ เพิ่มสินค้าใหม่
 app.post("/products", async (req, res) => {
   try {
     const { name, description, price, initialStock } = req.body;
@@ -64,45 +66,12 @@ app.post("/products", async (req, res) => {
   }
 });
 
-// ✅ เพิ่มจำนวนสินค้าเก่า (Stock In)
-app.put("/products/:id/stock/add", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { quantity, description } = req.body;
-
-    if (!quantity || quantity <= 0) {
-      return res.status(400).json({ message: "Invalid request body" });
-    }
-
-    const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    product.stock += quantity;
-    await product.save();
-
-    const history = new StockHistory({
-      productId: product._id,
-      type: "add",
-      quantity,
-      description: description || ""
-    });
-    await history.save();
-
-    res.json({ message: "Stock added successfully", product });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ✅ เบิกสินค้า (Stock Out)
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, description } = req.body;
+    const { userId, quantity, description } = req.body;
 
-    if (!quantity || quantity <= 0) {
+    if (!userId || !quantity || quantity <= 0) {
       return res.status(400).json({ message: "Invalid request body" });
     }
 
@@ -120,6 +89,7 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
 
     const history = new StockHistory({
       productId: product._id,
+      userId,
       type: "withdraw",
       quantity,
       description: description || ""
@@ -132,45 +102,19 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
   }
 });
 
-// ✅ ดึงข้อมูลสินค้าตาม ID
-app.get("/products/:id", async (req, res) => {
+app.get("/stock-history", async (req, res) => {
   try {
-    const { id } = req.params;
-    const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    const history = await StockHistory.find({ type: "withdraw" })
+      .populate("productId", "name price")
+      .populate("userId", "name username")
+      .sort({ date: -1 });
 
-// ✅ ดึงสินค้าทั้งหมด
-app.get("/products", async (req, res) => {
-  try {
-    const products = await Product.find();
-    if (products.length === 0) {
-      return res.status(404).json({ message: "No products found" });
-    }
-    res.json({ products });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ✅ ดึง Stock History ของสินค้า
-app.get("/products/:id/stock-history", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const history = await StockHistory.find({ productId: id }).sort({ date: -1 });
     res.json({ history });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
