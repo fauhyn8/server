@@ -4,21 +4,25 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
+// โหลดตัวแปรแวดล้อมจากไฟล์ .env
 dotenv.config();
 
 const app = express();
 const port = 8000;
 
+// เปิดใช้งาน CORS เพื่อให้สามารถรับคำขอจากโดเมนอื่นได้
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// เชื่อมต่อฐานข้อมูล MongoDB โดยใช้ URI จากตัวแปรแวดล้อม
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
+// กำหนด Schema สำหรับสินค้า ซึ่งมีชื่อ คำอธิบาย ราคา และจำนวนในสต็อก
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: String,
@@ -26,12 +30,14 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, required: true }
 });
 
+// กำหนด Schema สำหรับผู้ใช้ที่มีชื่อผู้ใช้ รหัสผ่าน และชื่อจริง
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String, required: true }
 });
 
+// กำหนด Schema สำหรับบันทึกประวัติการเบิกและเติมสินค้า โดยเก็บข้อมูลสินค้าที่เกี่ยวข้อง ผู้ใช้ และจำนวน
 const stockHistorySchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -45,6 +51,7 @@ const Product = mongoose.model("Product", productSchema);
 const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
+// API สำหรับเพิ่มสินค้าใหม่
 app.post("/products", async (req, res) => {
   try {
     const { name, description, price, initialStock } = req.body;
@@ -66,6 +73,7 @@ app.post("/products", async (req, res) => {
   }
 });
 
+// API สำหรับเบิกสินค้าออกจากสต็อก
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
@@ -102,6 +110,7 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
   }
 });
 
+// API สำหรับดึงข้อมูลประวัติการเบิกสินค้า
 app.get("/stock-history", async (req, res) => {
   try {
     const history = await StockHistory.find({ type: "withdraw" })
@@ -115,6 +124,7 @@ app.get("/stock-history", async (req, res) => {
   }
 });
 
+// เริ่มต้นเซิร์ฟเวอร์ Express และรอรับคำขอบนพอร์ตที่กำหนด
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
