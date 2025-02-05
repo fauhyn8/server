@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
+import cors from 'cors'; // ✅ นำเข้า CORS
 
 dotenv.config(); // โหลดตัวแปรแวดล้อม
 
@@ -9,6 +10,7 @@ const app = express();
 const port = 8000;
 
 // ✅ Middleware
+app.use(cors()); // ✅ เปิดใช้งาน CORS
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
