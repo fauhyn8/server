@@ -73,6 +73,16 @@ app.post("/products", async (req, res) => {
   }
 });
 
+// API สำหรับดึงข้อมูลสินค้าทั้งหมด
+app.get("/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json({ products });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API สำหรับเบิกสินค้าออกจากสต็อก
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
