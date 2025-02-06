@@ -52,6 +52,7 @@ const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
 // API สำหรับเพิ่มสินค้าใหม่
+// ✅ เพิ่มสินค้าใหม่
 app.post("/products", async (req, res) => {
   try {
     const { name, description, price, initialStock } = req.body;
@@ -73,23 +74,45 @@ app.post("/products", async (req, res) => {
   }
 });
 
-// API สำหรับดึงข้อมูลสินค้าทั้งหมด
-app.get("/products", async (req, res) => {
+// ✅ เพิ่มจำนวนสินค้าเก่า (Stock In)
+app.put("/products/:id/stock/add", async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json({ products });
+    const { id } = req.params;
+    const { quantity, description } = req.body;
+
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({ message: "Invalid request body" });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.stock += quantity;
+    await product.save();
+
+    const history = new StockHistory({
+      productId: product._id,
+      type: "add",
+      quantity,
+      description: description || ""
+    });
+    await history.save();
+
+    res.json({ message: "Stock added successfully", product });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// API สำหรับเบิกสินค้าออกจากสต็อก
+// ✅ เบิกสินค้า (Stock Out)
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, quantity, description } = req.body;
+    const { quantity, description } = req.body;
 
-    if (!userId || !quantity || quantity <= 0) {
+    if (!quantity || quantity <= 0) {
       return res.status(400).json({ message: "Invalid request body" });
     }
 
@@ -107,7 +130,6 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
 
     const history = new StockHistory({
       productId: product._id,
-      userId,
       type: "withdraw",
       quantity,
       description: description || ""
@@ -120,47 +142,39 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
   }
 });
 
-// API สำหรับดึงข้อมูลประวัติการเบิกสินค้า
-app.get("/stock-history", async (req, res) => {
+// ✅ ดึงข้อมูลสินค้าตาม ID
+app.get("/products/:id", async (req, res) => {
   try {
-    const history = await StockHistory.find({ type: "withdraw" })
-      .populate("productId", "name price")
-      .populate("userId", "name username")
-      .sort({ date: -1 });
-
-    res.json({ history });
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.json(product);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// API สำหรับเพิ่มจำนวนสินค้าในสต็อก
-app.put("/products/:id/stock/add", async (req, res) => {
+// ✅ ดึงสินค้าทั้งหมด
+app.get("/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+    if (products.length === 0) {
+      return res.status(404).json({ message: "No products found" });
+    }
+    res.json({ products });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ ดึง Stock History ของสินค้า
+app.get("/products/:id/stock-history", async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, description } = req.body;
-
-    if (!quantity || quantity <= 0) { // แก้ไขเงื่อนไขให้ถูกต้อง
-      return res.status(400).json({ message: "Invalid request body" });
-    }
-
-    const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    product.stock += quantity;
-    await product.save();
-
-    const history = new StockHistory({
-      productId: product._id,
-      type: "add",
-      quantity,
-      description: description || "" // แก้ไขให้ใช้ `||` แทน `""`
-    });
-    await history.save();
-
-    res.json({ message: "Stock added successfully", product });
+    const history = await StockHistory.find({ productId: id }).sort({ date: -1 });
+    res.json({ history });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
