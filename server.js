@@ -51,20 +51,24 @@ const Product = mongoose.model("Product", productSchema);
 const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
-app.post("/api/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
 
-    // ค้นหาผู้ใช้จากฐานข้อมูล
-    const user = await User.findOne({ username });
+  // ตรวจสอบข้อมูลผู้ใช้ในฐานข้อมูล
+  const user = await User.findOne({ username });
 
-    if (!user || user.password !== password) {
-      return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
-    }
-
-    res.json({ success: true, user: { username: user.username, role: "admin" } });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ" });
+  if (user && bcrypt.compareSync(password, user.password)) {
+    // ส่งข้อมูลผู้ใช้กลับมา รวมทั้ง _id
+    res.json({
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        role: user.role
+      }
+    });
+  } else {
+    res.json({ success: false, message: 'Invalid username or password' });
   }
 });
 
