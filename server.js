@@ -162,8 +162,6 @@ app.put("/products/:id/stock/add", async (req, res) => {
 });
 
 // ✅ เบิกสินค้า (Stock Out)
-const { v4: uuidv4 } = require("uuid");
-
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
