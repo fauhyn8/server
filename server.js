@@ -162,14 +162,16 @@ app.put("/products/:id/stock/add", async (req, res) => {
 });
 
 // ✅ เบิกสินค้า (Stock Out)
+const { v4: uuidv4 } = require("uuid");
+
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, quantity, description } = req.body;
+    let { userId, quantity, description, location, billId } = req.body;
 
-    // 🔴 ตรวจสอบว่ามี userId และ quantity ถูกต้องหรือไม่
-    if (!userId || !quantity || quantity <= 0) {
-      return res.status(400).json({ message: "Invalid request body" });
+    // 🔴 ตรวจสอบว่ามีข้อมูลที่จำเป็นครบหรือไม่
+    if (!userId || !quantity || quantity <= 0 || !location) {
+      return res.status(400).json({ message: "Invalid request body. Required: userId, quantity (>0), location" });
     }
 
     // ✅ ค้นหาสินค้าในฐานข้อมูล
@@ -178,9 +180,23 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // 🔴 ตรวจสอบว่าสินค้าพอสำหรับเบิกหรือไม่
+    // ✅ ค้นหาผู้ใช้ในฐานข้อมูลเพื่อนำ `username` มาใช้
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🔴 ตรวจสอบว่าสินค้ามีเพียงพอหรือไม่
     if (product.stock < quantity) {
       return res.status(400).json({ message: "Insufficient stock" });
+    }
+
+    // ✅ คำนวณ `total` (สมมติว่าสินค้ามีฟิลด์ `price`)
+    const total = quantity * (product.price || 0);
+
+    // ✅ ถ้าไม่มี billId ให้สร้างขึ้นอัตโนมัติ
+    if (!billId) {
+      billId = `BILL-${new Date().toISOString().replace(/[-:.TZ]/g, "")}-${uuidv4().slice(0, 6)}`;
     }
 
     // ✅ ลดจำนวนสต็อก
@@ -190,18 +206,23 @@ app.put("/products/:id/stock/withdraw", async (req, res) => {
     // ✅ บันทึกประวัติการเบิกสินค้าใน StockHistory
     const history = new StockHistory({
       productId: product._id,
-      userId,  // ✅ เพิ่ม userId เพื่อเก็บว่าใครเป็นคนเบิก
+      userId,
+      username: user.username,  // ✅ เก็บ `username` ของผู้เบิก
       type: "withdraw",
       quantity,
-      description: description || ""
+      total,  // ✅ เก็บ `total` = quantity * price
+      description: description || "",
+      location,
+      billId
     });
     await history.save();
 
-    res.json({ message: "Stock withdrawn successfully", product });
+    res.json({ message: "Stock withdrawn successfully", product, billId, total, username: user.username });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // ✅ ดึงข้อมูลสินค้าตาม ID
 app.get("/products/:id", async (req, res) => {
