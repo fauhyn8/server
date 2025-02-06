@@ -231,15 +231,17 @@ app.get("/products", async (req, res) => {
 });
 
 // ✅ ดึง Stock History ของสินค้า
-app.get("/products/:id/stock-history", async (req, res) => {
+app.get("/stock-history/withdraw", async (req, res) => {
   try {
-    const { id } = req.params;
-    const history = await StockHistory.find({ productId: id }).sort({ date: -1 });
+    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw"
+    const history = await StockHistory.find({ type: "withdraw" }).sort({ date: -1 });
+
     res.json({ history });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // เริ่มต้นเซิร์ฟเวอร์ Express และรอรับคำขอบนพอร์ตที่กำหนด
 app.listen(port, () => {
