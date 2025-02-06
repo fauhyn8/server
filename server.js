@@ -252,14 +252,17 @@ app.get("/products", async (req, res) => {
 // ✅ ดึง Stock History ของสินค้า
 app.get("/stock-history/withdraw", async (req, res) => {
   try {
-    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw"
-    const history = await StockHistory.find({ type: "withdraw" }).sort({ date: -1 });
+    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw" และเลือกเฉพาะฟิลด์ที่ต้องการแสดง
+    const history = await StockHistory.find({ type: "withdraw" })
+      .sort({ date: -1 })
+      .select("productId userId username quantity total location billId description date");
 
     res.json({ history });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 
 // เริ่มต้นเซิร์ฟเวอร์ Express และรอรับคำขอบนพอร์ตที่กำหนด
