@@ -78,22 +78,27 @@ app.post("/products", async (req, res) => {
 app.put("/products/:id/stock/add", async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, description } = req.body;
+    const { userId, quantity, description } = req.body;
 
-    if (!quantity || quantity <= 0) {
+    // 🔴 เช็คว่า userId ถูกส่งมาหรือไม่
+    if (!userId || !quantity || quantity <= 0) {
       return res.status(400).json({ message: "Invalid request body" });
     }
 
+    // ✅ ค้นหาสินค้าโดยใช้ id
     const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // ✅ เพิ่มสินค้าเข้าสต็อก
     product.stock += quantity;
     await product.save();
 
+    // ✅ บันทึกประวัติใน StockHistory
     const history = new StockHistory({
       productId: product._id,
+      userId,  // ✅ เพิ่ม userId ตรงนี้
       type: "add",
       quantity,
       description: description || ""
@@ -105,6 +110,7 @@ app.put("/products/:id/stock/add", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // ✅ เบิกสินค้า (Stock Out)
 app.put("/products/:id/stock/withdraw", async (req, res) => {
