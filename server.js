@@ -44,7 +44,11 @@ const stockHistorySchema = new mongoose.Schema({
   type: { type: String, enum: ["add", "withdraw"], required: true },
   quantity: { type: Number, required: true },
   description: String,
-  date: { type: Date, default: Date.now }
+  date: { type: Date, default: Date.now },
+  billId: { type: String },
+  location:{ type: String },
+  total:{ type: Number },
+  
 });
 
 const Product = mongoose.model("Product", productSchema);
