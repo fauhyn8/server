@@ -51,6 +51,23 @@ const Product = mongoose.model("Product", productSchema);
 const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // ค้นหาผู้ใช้จากฐานข้อมูล
+    const user = await User.findOne({ username });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
+    }
+
+    res.json({ success: true, user: { username: user.username, role: "admin" } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ" });
+  }
+});
+
 // ✅ API เก็บข้อมูลผู้ใช้
 app.post("/api/users", async (req, res) => {
   try {
