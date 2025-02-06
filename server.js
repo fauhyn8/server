@@ -111,31 +111,36 @@ app.put("/products/:id/stock/add", async (req, res) => {
   }
 });
 
-
 // ✅ เบิกสินค้า (Stock Out)
 app.put("/products/:id/stock/withdraw", async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, description } = req.body;
+    const { userId, quantity, description } = req.body;
 
-    if (!quantity || quantity <= 0) {
+    // 🔴 ตรวจสอบว่ามี userId และ quantity ถูกต้องหรือไม่
+    if (!userId || !quantity || quantity <= 0) {
       return res.status(400).json({ message: "Invalid request body" });
     }
 
+    // ✅ ค้นหาสินค้าในฐานข้อมูล
     const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // 🔴 ตรวจสอบว่าสินค้าพอสำหรับเบิกหรือไม่
     if (product.stock < quantity) {
       return res.status(400).json({ message: "Insufficient stock" });
     }
 
+    // ✅ ลดจำนวนสต็อก
     product.stock -= quantity;
     await product.save();
 
+    // ✅ บันทึกประวัติการเบิกสินค้าใน StockHistory
     const history = new StockHistory({
       productId: product._id,
+      userId,  // ✅ เพิ่ม userId เพื่อเก็บว่าใครเป็นคนเบิก
       type: "withdraw",
       quantity,
       description: description || ""
