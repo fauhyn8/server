@@ -51,6 +51,31 @@ const Product = mongoose.model("Product", productSchema);
 const User = mongoose.model("User", userSchema);
 const StockHistory = mongoose.model("StockHistory", stockHistorySchema);
 
+// ✅ API เก็บข้อมูลผู้ใช้
+app.post("/api/users", async (req, res) => {
+  try {
+    const { username, password, uid, name } = req.body;
+    if (!username || !password || !uid || !name) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    const newUser = new User({ username, password, uid, name });
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ API ดึงข้อมูลผู้ใช้ทั้งหมด
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API สำหรับเพิ่มสินค้าใหม่
 // ✅ เพิ่มสินค้าใหม่
 app.post("/products", async (req, res) => {
