@@ -252,16 +252,33 @@ app.get("/products", async (req, res) => {
 // ✅ ดึง Stock History ของสินค้า
 app.get("/stock-history/withdraw", async (req, res) => {
   try {
-    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw" และเลือกเฉพาะฟิลด์ที่ต้องการแสดง
+    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw" พร้อม `username`, `total`, `location`, และ `billId`
     const history = await StockHistory.find({ type: "withdraw" })
       .sort({ date: -1 })
+      .populate("userId", "username")  // ดึง `username` จาก `User`
+      .populate("productId", "price")  // ดึง `price` จาก `Product`
       .select("productId userId username quantity total location billId description date");
 
-    res.json({ history });
+    // คำนวณ `total` สำหรับแต่ละรายการ
+    const formattedHistory = history.map(item => ({
+      _id: item._id,
+      productId: item.productId?._id || null,
+      userId: item.userId?._id || null,
+      username: item.userId?.username || "Unknown",
+      quantity: item.quantity,
+      total: item.quantity * (item.productId?.price || 0),
+      location: item.location || "Unknown",
+      billId: item.billId || "N/A",
+      description: item.description || "",
+      date: item.date
+    }));
+
+    res.json({ history: formattedHistory });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 
 
