@@ -254,23 +254,24 @@ app.get("/products", async (req, res) => {
 });
 
 // ✅ ดึง Stock History ของสินค้า
-app.get("/stock-history/withdraw", async (req, res) => {
+app.get("/stock-history/withdraw", async (req, res) => { 
   try {
-    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw" พร้อม `username`, `total`, `location`, และ `billId`
+    // ดึงข้อมูลทั้งหมดที่ type เป็น "withdraw" พร้อม `username`, `total`, `location`, `billId`, และ `productName`
     const history = await StockHistory.find({ type: "withdraw" })
       .sort({ date: -1 })
       .populate("userId", "username")  // ดึง `username` จาก `User`
-      .populate("productId", "price")  // ดึง `price` จาก `Product`
+      .populate("productId", "name price")  // ดึง `name` และ `price` จาก `Product`
       .select("productId userId username quantity total location billId description date");
 
-    // คำนวณ `total` สำหรับแต่ละรายการ
+    // คำนวณ `total` และเพิ่ม `productName` สำหรับแต่ละรายการ
     const formattedHistory = history.map(item => ({
       _id: item._id,
       productId: item.productId?._id || null,
+      productName: item.productId?.name || "Unknown",  // ✅ เพิ่มชื่อสินค้า
       userId: item.userId?._id || null,
       username: item.userId?.username || "Unknown",
       quantity: item.quantity,
-      total: item.quantity * (item.productId?.price || 0),
+      total: item.quantity * (item.productId?.price || 0),  // ✅ คำนวณราคารวม
       location: item.location || "Unknown",
       billId: item.billId || "N/A",
       description: item.description || "",
