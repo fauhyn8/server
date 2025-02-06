@@ -62,7 +62,15 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ success: false, error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
     }
 
-    res.json({ success: true, user: { username: user.username, role: "admin" } });
+    // ส่งข้อมูลผู้ใช้กลับมา รวมทั้ง _id และ username
+    res.json({ 
+      success: true, 
+      user: { 
+        _id: user._id, 
+        username: user.username, 
+        role: user.role 
+      } 
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ" });
   }
